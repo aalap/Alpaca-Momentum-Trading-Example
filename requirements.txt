@@ -1,3 +1,3 @@
 alpaca-trade-api>=0.25
-ta
-sklearn
+ta==0.5.11
+sklearn==0.0
