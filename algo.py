@@ -21,14 +21,15 @@ session = requests.session()
 
 # We only consider stocks with per-share prices inside this range
 min_share_price = 2.0
-max_share_price = 13.0
+max_share_price = 15.0
 # Minimum previous-day dollar volume for a stock we might consider
 min_last_dv = 500000
 # Stop limit to default to
 default_stop = .95
 # How much of our portfolio to allocate to any one position
-risk = 0.001
-
+risk = 0.005
+# Multiple used to determine target price. eg. 3 times stop price = 3R
+target_price_multiple = 2
 
 def get_1000m_history_data(symbols):
     print('Getting historical data...')
@@ -248,7 +249,7 @@ def run(tickers, market_open_dt, market_close_dt):
                 )
                 stop_prices[symbol] = stop_price
                 target_prices[symbol] = data.close + (
-                    (data.close - stop_price) * 3
+                    (data.close - stop_price) * target_price_multiple
                 )
                 shares_to_buy = portfolio_value * risk // (
                     data.close - stop_price
@@ -259,8 +260,8 @@ def run(tickers, market_open_dt, market_close_dt):
                 if shares_to_buy <= 0:
                     return
 
-                print('Submitting buy for {} shares of {} at {}'.format(
-                    shares_to_buy, symbol, data.close
+                print('Submitting buy for {} shares of {} at {}. Stop={}, Target={}'.format(
+                    shares_to_buy, symbol, data.close, stop_price, target_prices[symbol]
                 ))
                 try:
                     o = api.submit_order(
@@ -367,6 +368,7 @@ def run_ws(conn, channels):
         run_ws(conn, channels)
 
 
+# Get market hours for today, then wait until 15 min after open to start getting tickers
 if __name__ == "__main__":
     # Get when the market opens or opened today
     nyc = timezone('America/New_York')
